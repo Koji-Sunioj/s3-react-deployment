@@ -1,6 +1,8 @@
 import "./App.css";
 
 function App() {
+  console.log(import.meta.env.VITE_TITLE);
+
   return (
     <>
       <h1>Vite + React</h1>
