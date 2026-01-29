@@ -15,10 +15,10 @@ jobs:
           STACK: ${{ secrets.WEBAPP_STACK }}
         run: |
           #1. parse both cloudfront url and S3 bucket name
-          CLOUDFRONT_ID=$(aws cloudformation describe-stacks --stack-name $STACK | jq .Stacks[0].Outputs | \
+          CLOUDFRONT_ID=$(aws cloudformation describe-stacks --stack-name $STACK --region eu-north-1 | jq .Stacks[0].Outputs | \
           jq 'map(select(.OutputKey | contains("CloudFrontID")))' | jq first.OutputValue | sed "s/\"//g")
           echo "{environment_variable_name}={value}" >> "$GITHUB_ENV"
-          S3_BUCKET=$(aws cloudformation describe-stacks --stack-name $STACK | jq .Stacks[0].Outputs | \
+          S3_BUCKET=$(aws cloudformation describe-stacks --stack-name $STACK --region eu-north-1 | jq .Stacks[0].Outputs | \
           jq 'map(select(.OutputKey | contains("WebAppBucket")))' | jq first.OutputValue | sed "s/\"//g")
           #2. set in environment of job
           echo "CLOUDFRONT_ID=$CLOUDFRONT_ID"
