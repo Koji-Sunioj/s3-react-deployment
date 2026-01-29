@@ -21,6 +21,8 @@ jobs:
           S3_BUCKET=$(aws cloudformation describe-stacks --stack-name $STACK | jq .Stacks[0].Outputs | \
           jq 'map(select(.OutputKey | contains("WebAppBucket")))' | jq first.OutputValue | sed "s/\"//g")
           #2. set in environment of job
+          echo "CLOUDFRONT_ID=$CLOUDFRONT_ID"
+          echo "S3_BUCKET=$S3_BUCKET"
           echo "CLOUDFRONT_ID=$CLOUDFRONT_ID" >> "$GITHUB_ENV"
           echo "S3_BUCKET=$S3_BUCKET" >> "$GITHUB_ENV"
       - name: checkout files
