@@ -34,6 +34,8 @@ jobs:
         with:
           node-version: "24"
       - name: install and build
+        env:
+          STACK: ${{ secrets.WEBAPP_STACK }}
         run: |
           npm install
           echo "VITE_TITLE=$STACK" > .env.production
