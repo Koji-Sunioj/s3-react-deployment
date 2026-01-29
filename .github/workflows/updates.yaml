@@ -1,0 +1,59 @@
+name: update website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-n-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: update environment
+        env:
+          STACK: ${{ secrets.WEBAPP_STACK }}
+        run: |
+          #1. parse both cloudfront url and S3 bucket name
+          CLOUDFRONT_ID=$(aws cloudformation describe-stacks --stack-name $STACK | jq .Stacks[0].Outputs | \
+          jq 'map(select(.OutputKey | contains("CloudFrontID")))' | jq first.OutputValue | sed "s/\"//g")
+          echo "{environment_variable_name}={value}" >> "$GITHUB_ENV"
+          S3_BUCKET=$(aws cloudformation describe-stacks --stack-name $STACK | jq .Stacks[0].Outputs | \
+          jq 'map(select(.OutputKey | contains("WebAppBucket")))' | jq first.OutputValue | sed "s/\"//g")
+          #2. set in environment of job
+          echo "CLOUDFRONT_ID=$CLOUDFRONT_ID" >> "$GITHUB_ENV"
+          echo "S3_BUCKET=$S3_BUCKET" >> "$GITHUB_ENV"
+      - name: checkout files
+        uses: actions/checkout@master
+      - name: configure node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: install deps
+        run: |
+          npm install
+          echo "VITE_TITLE:$STACK" > .env
+      - name: build app
+        run: npm run build
+      - name: upload to s3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET:  ${{ env.S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}    
+          AWS_REGION: 'eu-north-1'
+      - name: invalidate cloudfront
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          DISTRIBUTION: ${{ env.CLOUDFRONT_ID }}
+          PATHS: "/index.html"
+          AWS_REGION: "eu-north-1"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+
+
+
+
